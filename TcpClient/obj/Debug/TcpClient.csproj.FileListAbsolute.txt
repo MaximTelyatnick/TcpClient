@@ -1,0 +1,13 @@
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\TcpClient.exe.config
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.csprojResolveAssemblyReference.cache
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\TcpClient.exe
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\TcpClient.pdb
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\WatsonTcp.dll
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\WatsonTcp.pdb
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.exe
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.pdb
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\Packet.dll
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\bin\Debug\Packet.pdb
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.MainFm.resources
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.csproj.GenerateResource.Cache
+d:\teliatnyck\documents\visual studio 2012\Projects\TcpClient\TcpClient\obj\Debug\TcpClient.exe.licenses
