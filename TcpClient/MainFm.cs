@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using WatsonTcp;
-using TcpServer;
 using Packet;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System.Collections;
 
 namespace TcpClient
 {
@@ -20,15 +20,23 @@ namespace TcpClient
     {
         public Timer signalTimer;
         public WatsonTcpClient client;
-        public Utils.Command currentCommand;
+        public PacketDTO currentPacket;
         public string serverIp;
+  
 
         public MainFm()
         {
             InitializeComponent();
-            commandEdit.Properties.DataSource = Enum.GetNames(typeof(Utils.Command));
-            commandEdit.Properties.ValueMember = "Column";
-            commandEdit.Properties.DisplayMember = "Column";
+
+            serverIpEdit.Text = "191.168.3.3";
+
+            commandTypeEdit.Properties.DataSource = Enum.GetValues(typeof(Utils.TypeCommand));
+            commandControlEdit.Properties.DataSource = Enum.GetValues(typeof(Utils.ControlCommand));
+            idDbEdit.EditValue = 0;
+            idPlcEdit.EditValue = 0;
+
+            disconnectServerBtn.Enabled = false;
+
         }
 
         private void connectServerBtn_Click(object sender, EventArgs e)
@@ -38,18 +46,27 @@ namespace TcpClient
                 try
                 {
                     client = new WatsonTcpClient(serverIp, 9000, ServerConnected, ServerDisconnected, MessageReceived, true);
-                    connectServerBtn.Text = "Отключиться";
+
+
+
+                    if (client != null)
+                    {
+                        client.Send(ObjectToByteArray(new PacketDTO(Utils.TypeCommand.Control, Utils.ControlCommand.Connected, Convert.ToInt32(idPlcEdit.EditValue), Convert.ToString(namePlcEdit.EditValue), Convert.ToInt32(idDbEdit.EditValue), Convert.ToString(nameDbEdit.EditValue), null, null)));
+                        connectServerBtn.Enabled = false;
+                        disconnectServerBtn.Enabled = true;
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Помилка авторизації на сервері", "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("Ошибка при подключении к серверу.\n" + ex.Message, "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
-            else
-            {
-                client = null;
-                connectServerBtn.Text = "Подключиться";
-            }
+            
         }
 
         private void serverIpEdit_EditValueChanged(object sender, EventArgs e)
@@ -72,31 +89,57 @@ namespace TcpClient
         {
             Object receivedObject = new Object();
             receivedObject = ByteArrayToObject(data);
-            switch (((PacketDTO)receivedObject).command)
+            switch (((PacketDTO)receivedObject).typeCommand)
             {
-                case Utils.Command.Not_correct_command:
+                case Utils.TypeCommand.Control:
                     Console.WriteLine(((PacketDTO)receivedObject).message);
-                    messageEdit.MaskBox.AppendText(DateTime.Now +" "+ ((PacketDTO)receivedObject).message);
-                    break;
 
-                case Utils.Command.Get_server_plc_db1:
-                case Utils.Command.Get_server_plc_db27:
-                case Utils.Command.Get_server_plc_db28:
-                case Utils.Command.Get_server_plc_db29:
-                    Object taglist = new Object();
-                    taglist = ByteArrayToObject(((PacketDTO)receivedObject).info);
-                    Console.WriteLine(((PacketDTO)receivedObject).message);
-                    Console.WriteLine("====================================");
-                    Console.WriteLine("CellNumber: " + ((TagDTO)taglist).CellNumber);
-                    Console.WriteLine("CurrentWeight: " + ((TagDTO)taglist).CurrentWeight);
-                    Console.WriteLine("Error: " + ((TagDTO)taglist).Error);
-                    Console.WriteLine("ErrorList: " + ((TagDTO)taglist).ErrorList);
-                    Console.WriteLine("OldWeight: " + ((TagDTO)taglist).OldWeight);
-                    Console.WriteLine("PLCDropoffWind: " + ((TagDTO)taglist).PLCDropoffWind);
-                    Console.WriteLine("PLCLoadStatus: " + ((TagDTO)taglist).PLCLoadStatus);
-                    Console.WriteLine("PLCSetClose: " + ((TagDTO)taglist).PLCSetClose);
-                    Console.WriteLine("PLCSetOpen: " + ((TagDTO)taglist).PLCSetOpen);
-                    Console.WriteLine("====================================");
+                    switch (((PacketDTO)receivedObject).controlCommand)
+	                {
+                        
+                        //case Utils.ControlCommand.Control:
+                            
+
+
+                        //    break;
+                        
+                        case Utils.ControlCommand.Write:
+
+                            Object taglist = new Object();
+                            taglist = ByteArrayToObject(((PacketDTO)receivedObject).info);
+
+                            var peremen = ((IEnumerable)taglist).Cast<object>().ToList();
+                            
+                            foreach (var item in peremen)
+                            {
+                                Invoke(new AddMessageLogDelegate(AddMessageLog), new object[] { ((DataItemsQueryDTO)item).Name + " " });
+                                Invoke(new AddMessageLogDelegate(AddMessageLog), new object[] { ((DataItemsQueryDTO)item).Offset + " " });
+                                Invoke(new AddMessageLogDelegate(AddMessageLog), new object[] { ((DataItemsQueryDTO)item).CurrentValue + Environment.NewLine });
+                                
+                                
+                               // Console.WriteLine("CurrentWeight: " + ((DataItemsQueryDTO)item).CurrentValue);
+                            }
+                            
+                            //    Console.WriteLine(((PacketDTO)receivedObject).message);
+                            //Console.WriteLine("====================================");
+                            ////Console.WriteLine("CellNumber: " + ((DataItemsQueryDTO)taglist).Name + " " +);
+                            //Console.WriteLine("CurrentWeight: " + ((TagDTO)taglist).CurrentWeight);
+                            //Console.WriteLine("Error: " + ((TagDTO)taglist).Error);
+                            //Console.WriteLine("ErrorList: " + ((TagDTO)taglist).ErrorList);
+                            //Console.WriteLine("OldWeight: " + ((TagDTO)taglist).OldWeight);
+                            //Console.WriteLine("PLCDropoffWind: " + ((TagDTO)taglist).PLCDropoffWind);
+                            //Console.WriteLine("PLCLoadStatus: " + ((TagDTO)taglist).PLCLoadStatus);
+                            //Console.WriteLine("PLCSetClose: " + ((TagDTO)taglist).PLCSetClose);
+                            //Console.WriteLine("PLCSetOpen: " + ((TagDTO)taglist).PLCSetOpen);
+                            //Console.WriteLine("====================================");
+
+
+                            break;
+
+		                default:
+
+                            break;
+	                }
                     break;
 
                 default:
@@ -104,12 +147,14 @@ namespace TcpClient
                     break;
             }
 
-            //TagsDTO tagDto = new TagsDTO();
-            //tagDto = ByteArrayToObject(data);
-            //Console.WriteLine("Message from server:");
-            //Console.WriteLine(tagDto.CurrentWeight);
-            //Console.WriteLine(tagDto.OldWeight);
             return true;
+        }
+
+        public delegate void AddMessageLogDelegate(string message);
+
+        public void AddMessageLog(string message)
+        {
+            messageEdit.MaskBox.AppendText(message);
         }
 
         public byte[] ObjectToByteArray(Object obj)
@@ -149,32 +194,75 @@ namespace TcpClient
 
         private void startCommandBtn_Click(object sender, EventArgs e)
         {
-            switch (currentCommand)
+
+         currentPacket = new PacketDTO((Utils.TypeCommand)commandTypeEdit.EditValue, (Utils.ControlCommand?)commandControlEdit.EditValue, Convert.ToInt32(idPlcEdit.EditValue), Convert.ToString(namePlcEdit.EditValue), Convert.ToInt32(idDbEdit.EditValue), Convert.ToString(nameDbEdit.EditValue), (string)textMessageEdit.EditValue, null);
+
+
+            switch (currentPacket.typeCommand)
             {
-                case Utils.Command.Get_server_plc_db1:
-                    signalTimer.Start();
+                case Utils.TypeCommand.Control:
+
+                    client.Send(ObjectToByteArray(currentPacket));
+
                     break;
 
-                case Utils.Command.Get_server_plc_db27:
-                    signalTimer.Start();
+                case Utils.TypeCommand.Inform:
+
+                    client.Send(ObjectToByteArray(currentPacket));
+
                     break;
 
-                case Utils.Command.Get_server_plc_db28:
-                    signalTimer.Start();
-                    break;
-
-                case Utils.Command.Get_server_plc_db29:
-                    signalTimer.Start();
-                    break;
-                case Utils.Command.Not_correct_command:
-                    signalTimer.Stop();
+                default:
                     break;
             }
         }
 
         private void commandEdit_EditValueChanged(object sender, EventArgs e)
         {
-            currentCommand = (Utils.Command)commandEdit.EditValue;
+
+            //Console.WriteLine("Server connected");
+
+
+            switch ((Utils.TypeCommand)commandTypeEdit.EditValue)
+            {
+                case Utils.TypeCommand.Control:
+
+                    break;
+
+            }
+
+        }
+
+        private void disconnectServerBtn_Click(object sender, EventArgs e)
+        {
+           if(client != null)
+            {
+                try
+                {
+                    client.Send(ObjectToByteArray(new PacketDTO(Utils.TypeCommand.Control, Utils.ControlCommand.Disconnected, 0, null, 0, null, null, null)));
+                    client = null;
+                    connectServerBtn.Enabled = true;
+                    disconnectServerBtn.Enabled = false;
+                
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Ошибка завершения работы клиента.\n" + ex.Message, "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private void MainFm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            try
+            {
+                client.Send(ObjectToByteArray(new PacketDTO(Utils.TypeCommand.Control, Utils.ControlCommand.Disconnected, 0,null, 0, null, null, null)));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка завершения работы клиента.\n" + ex.Message, "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            
         }
 
     }

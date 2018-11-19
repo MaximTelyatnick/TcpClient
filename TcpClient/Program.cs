@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using WatsonTcp;
 using Packet;
 using System.Timers;
-using TcpServer;
+
 using System.Windows.Forms;
 
 namespace TcpClient
